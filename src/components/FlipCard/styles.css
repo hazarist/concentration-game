@@ -1,0 +1,42 @@
+.c-4,
+.c-6,
+.c-8 {
+    position: absolute;
+    cursor: pointer;
+    will-change: transform, opacity;
+  }
+
+  .c-4 {
+    width: 150px;
+    height: 150px;
+  }
+
+  .c-6 {
+    position: absolute;
+    width: 95px;
+    height: 95px;
+    cursor: pointer;
+    will-change: transform, opacity;
+  }
+
+  .c-8 {
+    position: absolute;
+    width: 75px;
+    height: 75px;
+    cursor: pointer;
+    will-change: transform, opacity;
+  }
+
+  .front,
+  .back {
+    background-size: cover;
+    background-position: center center;
+  }
+  
+  .container {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    justify-content: center;
+  }
+  
