@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
+import { GameContext } from "../../context/GameContextProvider";
 
 function GameInitialize() {
-  const [boardSize, setBoardSize] = useState(4);
-  const [mode, setMode] = useState(1);
+  const { dispatch } = useContext(GameContext);
 
   return (
     <div className="d-flex flex-column vh-100">
@@ -14,7 +14,12 @@ function GameInitialize() {
         <select
           id="board-size-select"
           className="form-control w-25 m-auto mb-3"
-          onChange={(event) => setBoardSize(event.target.value)}
+          onChange={(event) =>
+            dispatch({
+              type: "setBoardSize",
+              value: event.target.value
+            })
+          }
         >
           <option value={4}>4X4 Board</option>
           <option value={6}>6X6 Board</option>
@@ -24,13 +29,15 @@ function GameInitialize() {
         <select
           id="player-number-select"
           className="form-control w-25 m-auto mb-3"
-          onChange={(event) => setMode(event.target.value)}
+          onChange={(event) =>
+            dispatch({ type: "setMode", value: event.target.value })
+          }
         >
           <option value={1}>1 player</option>
           <option value={2}>2 players</option>
           <option value={3}>3 players</option>
         </select>
-        <Link to={`/play?size=${boardSize}&players=${mode}`}>Play</Link>
+        <Link to={"/play"}>Play</Link>
       </div>
     </div>
   );

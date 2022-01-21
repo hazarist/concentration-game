@@ -1,17 +1,46 @@
-import _ from "lodash";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useReducer } from "react";
+import { Link } from "react-router-dom/cjs/react-router-dom.min";
 import FlipCard from "../FlipCard/FlipCard.jsx";
-import GameResult from "../GameResult/GameResult.jsx";
-import ScoreBoard from "../ScoreBoard/ScoreBoard.js";
+import ScoreBoard from "../ScoreBoard/ScoreBoard.jsx";
 import "./style.css";
 
+function gameBoardReducer(state, action) {
+  switch (action.type) {
+    case "setMatchedList": {
+      return { ...state, matchedList: action.value };
+    }
+    case "setFlippedList": {
+      return { ...state, flippedList: action.value };
+    }
+    case "setCloseList": {
+      return { ...state, closeList: action.value };
+    }
+    case "setPlayerList": {
+      return { ...state, playerList: action.value };
+    }
+    case "setActivePlayerId": {
+      return { ...state, activePlayerId: action.value };
+    }
+    case "setRound": {
+      return { ...state, round: action.value };
+    }
+    default: {
+      throw new Error(`Unhandled action type: ${action.type}`);
+    }
+  }
+}
+
+const gameBoardInit = {
+  matchedList: [],
+  flippedList: [],
+  closeList: [],
+  playerList: [],
+  activePlayerId: 0,
+  round: 0
+};
+
 function GameBoard({ cardList = [], size, players }) {
-  const [matchedList, setMatchedList] = useState([]);
-  const [flippedList, setFlippedList] = useState([]);
-  const [closeList, setCloseList] = useState([]);
-  const [playerList, setPlayerList] = useState([]);
-  const [activePlayerId, setActivePlayerId] = useState(0);
-  const [round, setRound] = useState(0);
+  const [state, dispatch] = useReducer(gameBoardReducer, gameBoardInit);
 
   const preparePlayerList = useCallback(() => {
     let _playerList = [];
@@ -23,7 +52,7 @@ function GameBoard({ cardList = [], size, players }) {
       };
       _playerList.push(_player);
     }
-    setPlayerList(_playerList);
+    dispatch({ type: "setPlayerList", value: _playerList });
   }, [players]);
 
   useEffect(() => {
@@ -32,35 +61,42 @@ function GameBoard({ cardList = [], size, players }) {
 
   const setFlippedId = (order, id) => {
     // round counter
-    if (flippedList[0]?.id !== id && flippedList.length === 1) {
-      setRound(round + 1);
+    if (state.flippedList[0]?.id !== id && state.flippedList.length === 1) {
+      dispatch({ type: "setRound", value: state.round + 1 });
     }
 
     //match control
-    if (flippedList[0]?.id === id && flippedList.length === 1) {
-      setMatchedList([...matchedList, id]);
+    if (state.flippedList[0]?.id === id && state.flippedList.length === 1) {
+      dispatch({ type: "setMatchedList", value: [...state.matchedList, id] });
 
       // set score to the player
-      let _playerList = playerList.map((x) => {
-        if (activePlayerId === x.id) {
+      let _playerList = state.playerList.map((x) => {
+        if (state.activePlayerId === x.id) {
           x.score += 1;
         }
         return x;
       });
-      setPlayerList([..._playerList]);
+      dispatch({ type: "setPlayerList", value: [..._playerList] });
     }
 
     //push new element into flipped list. if list is full, empty it
-    if (flippedList.length === 2) {
-      setCloseList([...flippedList.map((x) => x.order)]);
-      setFlippedList([{ order, id }]);
-      setActivePlayerId(round % players);
+    if (state.flippedList.length === 2) {
+      dispatch({
+        type: "setCloseList",
+        value: [...state.flippedList.map((x) => x.order)]
+      });
+      dispatch({ type: "setFlippedList", value: [{ order, id }] });
+      dispatch({ type: "setActivePlayerId", value: state.round % players });
     } else {
-      setFlippedList([...flippedList, { order, id }]);
+      dispatch({
+        type: "setFlippedList",
+        value: [...state.flippedList, { order, id }]
+      });
     }
 
     //empty close list
-    if (flippedList.length < 2) setCloseList([]);
+    if (state.flippedList.length < 2)
+      dispatch({ type: "setCloseList", value: [] });
   };
 
   const prepareBoard = (_size) => {
@@ -72,22 +108,44 @@ function GameBoard({ cardList = [], size, players }) {
           size={_size}
           order={index}
           setFlippedId={setFlippedId}
-          matchList={matchedList}
-          closeList={closeList}
+          matchList={state.matchedList}
+          closeList={state.closeList}
         />
       </div>
     ));
   };
 
-  return matchedList.length === size * 2 ? (
-    <GameResult
-      size={size}
-      player={_.maxBy(playerList, (x) => x.score).name}
-      players={players}
-    />
-  ) : (
-    <div className="container d-grid">
-      <ScoreBoard playerList={playerList} activePlayerId={activePlayerId} />
+  return (
+    <div className="container d-grid" style={{ position: "relative" }}>
+      <ScoreBoard
+        playerList={state.playerList}
+        activePlayerId={state.activePlayerId}
+      />
+      {state.matchedList.length === size * 2 ? (
+        <div
+          style={{
+            display: "block",
+            position: "absolute",
+            left: "37%",
+            background: "black",
+            color: "white",
+            padding: "20px 50px"
+          }}
+        >
+          Game is over
+          <div style={{ marginBottom: "5px" }}>
+            Scoreboard
+            {state.playerList
+              .sort((a, b) => b - a)
+              .map((x, i) => {
+                return <div>{`${i + 1}) ${x.name}: ${x.score}`}</div>;
+              })}
+          </div>
+          <Link to={"/"}>Game Screen</Link>
+        </div>
+      ) : (
+        <></>
+      )}
       <div className={`grid-container-${size}`}>{prepareBoard(size)}</div>
     </div>
   );
